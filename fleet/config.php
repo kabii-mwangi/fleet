@@ -26,6 +26,10 @@ function requireAuth() {
 // Check if user has specific permission
 function hasPermission($permission) {
     if (!isset($_SESSION['permissions'])) {
+        // For hardcoded admin login, grant all permissions
+        if (isset($_SESSION['username']) && $_SESSION['username'] === 'Admin') {
+            return true;
+        }
         return false;
     }
     $permissions = json_decode($_SESSION['permissions'], true);
@@ -60,12 +64,20 @@ function getCurrentUser() {
 
 // Get user's office ID for data filtering
 function getUserOfficeId() {
+    // For hardcoded admin or if office_id not set, default to HQ (office_id = 1)
     return $_SESSION['office_id'] ?? 1;
 }
 
 // Check if current user is Super Admin (can see all offices)
 function isSuperAdmin() {
-    return isset($_SESSION['role_name']) && $_SESSION['role_name'] === 'Super Admin';
+    if (isset($_SESSION['role_name']) && $_SESSION['role_name'] === 'Super Admin') {
+        return true;
+    }
+    // For hardcoded admin login
+    if (isset($_SESSION['username']) && $_SESSION['username'] === 'Admin') {
+        return true;
+    }
+    return false;
 }
 
 // Format currency in KSH
@@ -87,6 +99,17 @@ function calculateEfficiency($distance, $fuel) {
 function getOfficeFilterSQL($tableAlias = '', $includeWhere = true) {
     if (isSuperAdmin()) {
         return ''; // Super admin sees all
+    }
+    
+    // For systems without office support yet, return empty filter
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM vehicles LIKE 'office_id'");
+        if ($stmt->rowCount() == 0) {
+            return ''; // office_id column doesn't exist yet
+        }
+    } catch(PDOException $e) {
+        return ''; // Database error, return no filter
     }
     
     $prefix = $tableAlias ? $tableAlias . '.' : '';

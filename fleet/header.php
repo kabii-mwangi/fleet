@@ -29,9 +29,9 @@
         
         <div class="nav-user">
             <div class="user-info">
-                <span class="user-name"><?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
-                <span class="user-role"><?php echo htmlspecialchars($_SESSION['role_name']); ?></span>
-                <span class="user-office"><?php echo htmlspecialchars($_SESSION['office_name']); ?></span>
+                <span class="user-name"><?php echo htmlspecialchars($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User'); ?></span>
+                <span class="user-role"><?php echo htmlspecialchars($_SESSION['role_name'] ?? 'Admin'); ?></span>
+                <span class="user-office"><?php echo htmlspecialchars($_SESSION['office_name'] ?? 'HQ'); ?></span>
             </div>
         </div>
     </div>

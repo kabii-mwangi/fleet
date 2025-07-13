@@ -13,6 +13,29 @@ if ($_POST) {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     
+    // First try hardcoded admin credentials for initial access
+    if ($username === 'Admin' && $password === 'Admin123#') {
+        $_SESSION['logged_in'] = true;
+        $_SESSION['user_id'] = 0;
+        $_SESSION['username'] = 'Admin';
+        $_SESSION['full_name'] = 'Administrator';
+        $_SESSION['role_id'] = 1;
+        $_SESSION['role_name'] = 'Super Admin';
+        $_SESSION['office_id'] = 1;
+        $_SESSION['office_name'] = 'HQ';
+        $_SESSION['permissions'] = json_encode([
+            'vehicles_view' => true, 'vehicles_edit' => true, 'vehicles_delete' => true,
+            'fuel_logs_view' => true, 'fuel_logs_edit' => true, 'fuel_logs_delete' => true,
+            'employees_view' => true, 'employees_edit' => true, 'employees_delete' => true,
+            'departments_view' => true, 'departments_edit' => true, 'departments_delete' => true,
+            'users_view' => true, 'users_edit' => true, 'users_delete' => true,
+            'reports_view' => true, 'system_settings' => true
+        ]);
+        header('Location: dashboard.php');
+        exit;
+    }
+    
+    // Try database authentication
     if (authenticateUser($username, $password)) {
         header('Location: dashboard.php');
         exit;
@@ -156,11 +179,11 @@ if ($_POST) {
         </div>
         
         <div class="demo-credentials">
-            <h4>Default Login Credentials:</h4>
-            <p><strong>Username:</strong> admin</p>
+            <h4>Login Credentials:</h4>
+            <p><strong>Username:</strong> Admin</p>
             <p><strong>Password:</strong> Admin123#</p>
-            <p><em>Note: Username is lowercase "admin"</em></p>
-            <p><em>If login fails, run setup_admin.php first</em></p>
+            <p><em>Use these exact credentials (case-sensitive)</em></p>
+            <p><em>These work even with empty database</em></p>
         </div>
         
         <?php if (isset($error)): ?>
