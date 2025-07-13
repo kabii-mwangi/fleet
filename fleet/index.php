@@ -156,10 +156,11 @@ if ($_POST) {
         </div>
         
         <div class="demo-credentials">
-            <h4>Demo Login Credentials:</h4>
+            <h4>Default Login Credentials:</h4>
             <p><strong>Username:</strong> admin</p>
             <p><strong>Password:</strong> Admin123#</p>
-            <p><em>Use these credentials for initial login</em></p>
+            <p><em>Note: Username is lowercase "admin"</em></p>
+            <p><em>If login fails, run setup_admin.php first</em></p>
         </div>
         
         <?php if (isset($error)): ?>

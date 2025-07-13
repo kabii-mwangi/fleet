@@ -99,36 +99,87 @@ function getOfficeFilterSQL($tableAlias = '', $includeWhere = true) {
 function authenticateUser($username, $password) {
     global $pdo;
     
-    $stmt = $pdo->prepare("
-        SELECT u.*, r.name as role_name, r.permissions, o.name as office_name 
-        FROM users u 
-        JOIN roles r ON u.role_id = r.id 
-        JOIN offices o ON u.office_id = o.id 
-        WHERE u.username = ? AND u.status = 'active'
-    ");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch();
-    
-    if ($user && password_verify($password, $user['password_hash'])) {
-        // Update last login
-        $stmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-        $stmt->execute([$user['id']]);
+    try {
+        // Check if users table exists (for migration compatibility)
+        $stmt = $pdo->query("SHOW TABLES LIKE 'users'");
+        if ($stmt->rowCount() == 0) {
+            // Fallback to old authentication during migration
+            if ($username === 'Admin' && $password === 'Admin123#') {
+                $_SESSION['logged_in'] = true;
+                $_SESSION['user_id'] = 0;
+                $_SESSION['username'] = 'Admin';
+                $_SESSION['full_name'] = 'Administrator';
+                $_SESSION['role_id'] = 1;
+                $_SESSION['role_name'] = 'Super Admin';
+                $_SESSION['office_id'] = 1;
+                $_SESSION['office_name'] = 'HQ';
+                $_SESSION['permissions'] = json_encode([
+                    'vehicles_view' => true, 'vehicles_edit' => true, 'vehicles_delete' => true,
+                    'fuel_logs_view' => true, 'fuel_logs_edit' => true, 'fuel_logs_delete' => true,
+                    'employees_view' => true, 'employees_edit' => true, 'employees_delete' => true,
+                    'departments_view' => true, 'departments_edit' => true, 'departments_delete' => true,
+                    'users_view' => true, 'users_edit' => true, 'users_delete' => true,
+                    'reports_view' => true, 'system_settings' => true
+                ]);
+                return true;
+            }
+            return false;
+        }
         
-        // Set session variables
-        $_SESSION['logged_in'] = true;
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['full_name'] = $user['full_name'];
-        $_SESSION['role_id'] = $user['role_id'];
-        $_SESSION['role_name'] = $user['role_name'];
-        $_SESSION['office_id'] = $user['office_id'];
-        $_SESSION['office_name'] = $user['office_name'];
-        $_SESSION['permissions'] = $user['permissions'];
+        $stmt = $pdo->prepare("
+            SELECT u.*, r.name as role_name, r.permissions, o.name as office_name 
+            FROM users u 
+            JOIN roles r ON u.role_id = r.id 
+            JOIN offices o ON u.office_id = o.id 
+            WHERE u.username = ? AND u.status = 'active'
+        ");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
         
-        return true;
+        if ($user && password_verify($password, $user['password_hash'])) {
+            // Update last login
+            $stmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+            $stmt->execute([$user['id']]);
+            
+            // Set session variables
+            $_SESSION['logged_in'] = true;
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['full_name'] = $user['full_name'];
+            $_SESSION['role_id'] = $user['role_id'];
+            $_SESSION['role_name'] = $user['role_name'];
+            $_SESSION['office_id'] = $user['office_id'];
+            $_SESSION['office_name'] = $user['office_name'];
+            $_SESSION['permissions'] = $user['permissions'];
+            
+            return true;
+        }
+        
+        return false;
+        
+    } catch(PDOException $e) {
+        // Fallback authentication if database has issues
+        if ($username === 'Admin' && $password === 'Admin123#') {
+            $_SESSION['logged_in'] = true;
+            $_SESSION['user_id'] = 0;
+            $_SESSION['username'] = 'Admin';
+            $_SESSION['full_name'] = 'Administrator';
+            $_SESSION['role_id'] = 1;
+            $_SESSION['role_name'] = 'Super Admin';
+            $_SESSION['office_id'] = 1;
+            $_SESSION['office_name'] = 'HQ';
+            $_SESSION['permissions'] = json_encode([
+                'vehicles_view' => true, 'vehicles_edit' => true, 'vehicles_delete' => true,
+                'fuel_logs_view' => true, 'fuel_logs_edit' => true, 'fuel_logs_delete' => true,
+                'employees_view' => true, 'employees_edit' => true, 'employees_delete' => true,
+                'departments_view' => true, 'departments_edit' => true, 'departments_delete' => true,
+                'users_view' => true, 'users_edit' => true, 'users_delete' => true,
+                'reports_view' => true, 'system_settings' => true
+            ]);
+            return true;
+        }
+        return false;
     }
-    
-    return false;
 }
 
 // Get all offices (for dropdowns)
